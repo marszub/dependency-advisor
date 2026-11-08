@@ -1,0 +1,20 @@
+---
+description: Dependency Advisor project rules for Cursor
+alwaysApply: true
+---
+
+# Dependency Advisor
+
+The single source of truth for project guidance is `AGENTS.md` in the repository
+root. Read it, plus `src/AGENTS.md` or `tests/AGENTS.md` for the area you touch.
+
+Non-negotiables:
+
+- Clang/LLVM headers and `clang::`/`llvm::` names stay inside `src/extractor/`.
+- `src/graph/` and `src/optimizer/` are pure C++23, unit-testable without Clang.
+- Core modules return structured C++ objects; only `src/cli/` renders text/JSON.
+- Use C++23 and `std::expected<T, E>` across module boundaries.
+- Run `./scripts/verify.sh` and review `git diff` before reporting completion.
+- Record design decisions in `docs/` (index: `docs/design/README.md`).
+
+Do not duplicate rules here; update `AGENTS.md` and its module files.

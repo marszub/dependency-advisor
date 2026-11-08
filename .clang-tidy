@@ -1,0 +1,34 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity
+WarningsAsErrors: ''
+HeaderFilterRegex: '(src|tests)/.*'
+FormatStyle: file
+CheckOptions:
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: "_"
+  - key: readability-identifier-naming.ConstantCase
+    value: CamelCase
+    # Constants are named like kFoo, matching the Google style guide.
+  - key: readability-identifier-naming.ConstantPrefix
+    value: "k"
+...

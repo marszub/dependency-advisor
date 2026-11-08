@@ -1,0 +1,15 @@
+# .clang-format for Dependency Advisor
+# Google C++ style, adapted for C++23 sources.
+# Note: clang-format (through v22) has no `c++23` Standard value, so we pin
+# `c++20` for deterministic parsing; the build itself still uses -std=c++23.
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++20
+ColumnLimit: 100
+IndentWidth: 4
+AccessModifierOffset: -4
+PointerAlignment: Left
+DerivePointerAlignment: false
+AllowShortFunctionsOnASingleLine: Empty
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve

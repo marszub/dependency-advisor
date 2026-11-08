@@ -1,0 +1,112 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "cpp-expert",
+  "instructions": [
+    "AGENTS.md",
+    "docs/design/README.md"
+  ],
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "git show *", "effect": "allow" },
+    { "action": "shell", "resource": "git blame *", "effect": "allow" },
+    { "action": "shell", "resource": "bazel build *", "effect": "allow" },
+    { "action": "shell", "resource": "bazel test *", "effect": "allow" },
+    { "action": "shell", "resource": "bazel run *", "effect": "allow" },
+    { "action": "shell", "resource": "clang-format *", "effect": "allow" },
+    { "action": "shell", "resource": "clang-tidy *", "effect": "ask" },
+    { "action": "shell", "resource": "python3 scripts/*", "effect": "allow" },
+    { "action": "shell", "resource": "python3 -m pytest *", "effect": "allow" },
+    { "action": "shell", "resource": "pytest *", "effect": "allow" },
+    { "action": "shell", "resource": "./scripts/*", "effect": "allow" },
+    { "action": "shell", "resource": "git commit *", "effect": "ask" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "shell", "resource": "git reset --hard *", "effect": "deny" },
+    { "action": "shell", "resource": "git clean *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+    { "action": "shell", "resource": "sudo *", "effect": "deny" },
+    { "action": "edit", "resource": ".git/*", "effect": "deny" },
+    { "action": "external_directory", "resource": "*", "effect": "ask" }
+  ],
+  "agents": {
+    "cpp-expert": {
+      "description": "Primary C++23 implementation agent for Dependency Advisor",
+      "mode": "primary",
+      "system": "You are implementing Dependency Advisor, a C++23 static analysis tool. Read AGENTS.md and src/AGENTS.md before editing. Non-negotiables: Clang/LLVM headers and clang:: usage stay inside src/extractor/; src/graph/ and src/optimizer/ remain pure C++23 and unit-testable without Clang; core modules return structured objects and never render CLI text or JSON; prefer std::expected<T, E> across module boundaries. Before reporting a task complete, run ./scripts/verify.sh (and bazel test //... when Bazel is available), inspect git diff, and report the exact command output. Never commit or push unless the user explicitly asks."
+    },
+    "reviewer": {
+      "description": "Read-only reviewer for correctness, module boundaries, and missing tests",
+      "mode": "subagent",
+      "system": "Review only. Do not modify files. Check for: violations of the module boundaries in AGENTS.md, missing GoogleTest coverage for new graph/optimizer logic, missing pytest coverage for CLI/output changes, std::expected misuse, and unverified claims. Report findings in severity order with file:line references. End with a verdict: APPROVE or CHANGES REQUESTED.",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "git status *", "effect": "allow" },
+        { "action": "shell", "resource": "git diff *", "effect": "allow" },
+        { "action": "shell", "resource": "git log *", "effect": "allow" },
+        { "action": "shell", "resource": "git show *", "effect": "allow" }
+      ]
+    },
+    "design-documenter": {
+      "description": "Writes and updates design documents under docs/",
+      "mode": "subagent",
+      "system": "You maintain the design record for Dependency Advisor. Write durable design documents under docs/design/ and drafts under docs/tmp/. Every document must state context, the decision, alternatives considered, trade-offs, affected modules, and a verification plan. Prefer editing an existing document over creating a near-duplicate, and keep docs/design/README.md in sync. Do not modify source code.",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": "docs/*", "effect": "allow" },
+        { "action": "shell", "resource": "git status *", "effect": "allow" },
+        { "action": "shell", "resource": "git diff *", "effect": "allow" }
+      ]
+    },
+    "clang-extractor": {
+      "description": "Clang LibTooling specialist constrained to src/extractor/",
+      "mode": "subagent",
+      "system": "You work only on Clang AST extraction. All clang:: and llvm:: usage belongs in src/extractor/. Emit a language-agnostic in-memory graph; never let Clang types cross the module boundary and never render CLI text or JSON. Add or update fixtures and unit tests for every matcher change. Run ./scripts/verify.sh and report its output.",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": "src/extractor/*", "effect": "allow" },
+        { "action": "edit", "resource": "tests/unit/*", "effect": "allow" },
+        { "action": "edit", "resource": "tests/fixtures/*", "effect": "allow" }
+      ]
+    }
+  },
+  "commands": {
+    "verify": {
+      "description": "Run the repository verification suite and report exact results",
+      "template": "Run the full verification workflow for this repository.\n\n1. Run `./scripts/verify.sh` from the repository root.\n2. If it reports that Bazel is missing, say so explicitly and list which checks did run.\n3. Run `git diff --check` and `git status --short`.\n4. Summarize failures with file:line references and exit codes. Do not claim success without command output. Do not commit."
+    },
+    "format": {
+      "description": "Format changed C/C++ files and review the diff",
+      "template": "Format only the C/C++ files changed in this working tree (or the files given in $ARGUMENTS).\n\n1. Determine the file list with `git diff --name-only` plus untracked files.\n2. Run `clang-format -i` on each C/C++ file.\n3. Show `git diff` for those files and review it for unintended changes.\n4. Report which files changed. Do not stage or commit."
+    },
+    "design": {
+      "description": "Record a design decision under docs/design/",
+      "template": "Document the following design decision: $ARGUMENTS\n\nLoad @design-documentation and follow its workflow. Update an existing document when it already covers the topic; otherwise create a new numbered document under docs/design/. Include context, decision, alternatives, trade-offs, affected modules, and verification plan. Update docs/design/README.md. Do not modify source code."
+    },
+    "review": {
+      "description": "Review current changes with the read-only reviewer subagent",
+      "agent": "reviewer",
+      "subagent": true,
+      "template": "Review the current uncommitted changes (git diff and git status) for correctness, module-boundary violations, missing GoogleTest or pytest coverage, and regressions. Report findings in severity order with file:line references, then give a verdict."
+    },
+    "boundary-audit": {
+      "description": "Audit Clang/LLVM leakage across module boundaries",
+      "template": "Load @module-boundary-audit and audit the repository. Run `python3 scripts/check_boundaries.py`, then inspect `src/graph/` and `src/optimizer/` (if present) for any hidden coupling to Clang. Report every violation with file:line and propose the minimal fix. Do not edit files unless asked."
+    }
+  },
+  "formatter": true,
+  "watcher": {
+    "ignore": [
+      "bazel-*",
+      "bazel-*/**",
+      "build/**",
+      ".cache/**",
+      "__pycache__/**",
+      ".pytest_cache/**",
+      "compile_commands.json"
+    ]
+  }
+}

@@ -39,3 +39,18 @@
 
 # debug information files
 *.dwo
+
+# Bazel convenience symlinks and outputs
+/bazel-*
+/bazel-out
+/bazel-bin
+/bazel-testlogs
+compile_commands.json
+
+# Local build/cache directories
+/build/
+/.cache/
+__pycache__/
+*.py[cod]
+/.pytest_cache/
+/.venv/
